@@ -50,6 +50,7 @@ Route::middleware(['auth'])->group(function () {
     
     // Extratos
     Route::get('/statements', [StatementController::class, 'index'])->name('statements.index');
+    Route::resource('statements', StatementController::class)->only(['index', 'show']);
     
     // Perfil
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

@@ -8,6 +8,7 @@ use App\DTOs\Transfer\TransferDTO;
 use App\Services\TransferService;
 use App\Http\Resources\Transfer\TransferResource;
 use App\Models\Wallet;
+use App\Models\Transfer;
 
 class TransferController extends Controller
 {

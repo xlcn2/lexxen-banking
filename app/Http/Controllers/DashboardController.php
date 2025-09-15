@@ -25,7 +25,7 @@ class DashboardController extends Controller
                     return [
                         'id' => $account->id,
                         'number' => $account->number,
-                        'status' => $account->status->value,
+                        'status' => $account->status,
                         'total_balance' => $account->total_balance,
                     ];
                 });

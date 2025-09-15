@@ -14,8 +14,8 @@ return [
     */
 
     'defaults' => [
-        'guard' => env('AUTH_GUARD', 'web'),
-        'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),
+        'guard' => 'individual', // Alterado para usar 'individual' como padrão
+        'passwords' => 'individuals', // Alterado para usar 'individuals' como padrão
     ],
 
     /*
@@ -40,6 +40,15 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        // Adicionados os guards para individual e corporate
+        'individual' => [
+            'driver' => 'session',
+            'provider' => 'individuals',
+        ],
+        'corporate' => [
+            'driver' => 'session',
+            'provider' => 'corporates',
+        ],
     ],
 
     /*
@@ -62,13 +71,17 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', App\Models\User::class),
+            'model' => App\Models\User::class,
         ],
-
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
+        // Adicionados os providers para individual e corporate
+        'individuals' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\IndividualUser::class,
+        ],
+        'corporates' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\CorporateUser::class,
+        ],
     ],
 
     /*
@@ -93,7 +106,20 @@ return [
     'passwords' => [
         'users' => [
             'provider' => 'users',
-            'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'table' => 'password_reset_tokens',
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+        // Adicionados os brokers de redefinição de senha para individual e corporate
+        'individuals' => [
+            'provider' => 'individuals',
+            'table' => 'password_reset_tokens',
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+        'corporates' => [
+            'provider' => 'corporates',
+            'table' => 'password_reset_tokens',
             'expire' => 60,
             'throttle' => 60,
         ],
@@ -110,6 +136,6 @@ return [
     |
     */
 
-    'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
+    'password_timeout' => 10800,
 
 ];

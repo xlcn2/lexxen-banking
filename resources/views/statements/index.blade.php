@@ -1,115 +1,102 @@
-<!-- resources/views/statements/index.blade.php -->
 @extends('layouts.app')
 
-@section('title', 'Extratos')
+@section('title', 'Extrato')
 
 @section('content')
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-md-12">
             <div class="card">
-                <div class="card-header">Extratos</div>
+                <div class="card-header">Extrato</div>
 
-                <div class="card-body" x-data="{ 
-                    selectedWallet: '{{ request('wallet_id', '') }}',
-                    startDate: '{{ request('start_date', '') }}',
-                    endDate: '{{ request('end_date', '') }}',
-                    wallets: {{ json_encode($wallets) }},
-                    statements: {{ json_encode($statements) }}
-                }">
+                <div class="card-body">
                     <!-- Filtros -->
-                    <form action="{{ route('statements.index') }}" method="GET" class="mb-4">
+                    <form method="GET" action="{{ route('statements.index') }}" class="mb-4">
                         <div class="row g-3">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label for="wallet_id" class="form-label">Carteira</label>
-                                <select 
-                                    name="wallet_id" 
-                                    id="wallet_id" 
-                                    class="form-select"
-                                    x-model="selectedWallet"
-                                    @change="this.form.submit()"
-                                >
+                                <select class="form-select" id="wallet_id" name="wallet_id">
                                     <option value="">Todas as carteiras</option>
-                                    <template x-for="wallet in wallets" :key="wallet.id">
-                                        <option 
-                                            :value="wallet.id" 
-                                            x-text="wallet.name"
-                                        ></option>
-                                    </template>
+                                    @foreach($wallets as $wallet)
+                                        <option value="{{ $wallet['id'] }}" {{ $walletId == $wallet['id'] ? 'selected' : '' }}>
+                                            {{ $wallet['name'] }} ({{ $wallet['account_number'] }})
+                                        </option>
+                                    @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label for="start_date" class="form-label">Data Inicial</label>
-                                <input 
-                                    type="date" 
-                                    name="start_date" 
-                                    id="start_date" 
-                                    class="form-control"
-                                    x-model="startDate"
-                                    @change="this.form.submit()"
-                                >
+                                <input type="date" class="form-control" id="start_date" name="start_date" value="{{ $startDate }}">
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label for="end_date" class="form-label">Data Final</label>
-                                <input 
-                                    type="date" 
-                                    name="end_date" 
-                                    id="end_date" 
-                                    class="form-control"
-                                    x-model="endDate"
-                                    @change="this.form.submit()"
-                                >
+                                <input type="date" class="form-control" id="end_date" name="end_date" value="{{ $endDate }}">
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary me-2">Filtrar</button>
+                                <a href="{{ route('statements.index') }}" class="btn btn-outline-secondary">Limpar</a>
                             </div>
                         </div>
                     </form>
-                    
-                    <!-- Tabela de extratos -->
+
+                    <!-- Tabela de Extratos -->
                     <div class="table-responsive">
                         <table class="table table-striped">
                             <thead>
                                 <tr>
                                     <th>Data/Hora</th>
-                                    <th>Tipo</th>
                                     <th>Carteira</th>
+                                    <th>Descrição</th>
                                     <th>Valor</th>
-                                    <th>Saldo Após</th>
+                                    <th>Saldo</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <template x-for="statement in statements.data" :key="statement.id">
+                                @forelse($statements as $statement)
                                     <tr>
-                                        <td x-text="new Date(statement.created_at).toLocaleString('pt-BR')"></td>
+                                        <td>{{ $statement->created_at->format('d/m/Y H:i') }}</td>
                                         <td>
-                                            <span 
-                                                x-text="statement.type === 'credit' ? 'Crédito' : 'Débito'"
-                                                :class="{
-                                                    'badge bg-success': statement.type === 'credit',
-                                                    'badge bg-danger': statement.type === 'debit'
-                                                }"
-                                            ></span>
+                                            {{ $statement->wallet->name }} <br>
+                                            <small class="text-muted">Conta: {{ $statement->wallet->account->number }}</small>
                                         </td>
-                                        <td x-text="statement.wallet.name"></td>
-                                        <td 
-                                            :class="{
-                                                'text-success fw-bold': statement.type === 'credit',
-                                                'text-danger fw-bold': statement.type === 'debit'
-                                            }"
-                                            x-text="(statement.type === 'credit' ? '+' : '-') + ' R$ ' + statement.amount.toFixed(2)"
-                                        ></td>
-                                        <td class="fw-bold" x-text="'R$ ' + statement.balance_after.toFixed(2)"></td>
+                                        <td>
+                                            @if($statement->transfer)
+                                                @if($statement->transfer->source_wallet_id == $statement->wallet_id)
+                                                    Transferência enviada para 
+                                                    {{ $statement->transfer->destinationWallet->account->number }}
+                                                @else
+                                                    Transferência recebida de 
+                                                    {{ $statement->transfer->sourceWallet->account->number }}
+                                                @endif
+                                            @else
+                                                {{ $statement->description }}
+                                            @endif
+                                        </td>
+                                        <td class="{{ $statement->amount < 0 ? 'text-danger' : 'text-success' }} fw-bold">
+                                            {{ $statement->amount < 0 ? '-' : '+' }} R$ {{ number_format(abs($statement->amount), 2, ',', '.') }}
+                                        </td>
+                                        <td>
+                                            R$ {{ number_format($statement->balance_after, 2, ',', '.') }}
+                                        </td>
+                                        <td>
+                                            <a href="{{ route('statements.show', $statement) }}" class="btn btn-sm btn-outline-secondary">
+                                                Detalhes
+                                            </a>
+                                        </td>
                                     </tr>
-                                </template>
-                                
-                                <tr x-show="statements.data.length === 0">
-                                    <td colspan="5" class="text-center py-3">Nenhuma transação encontrada.</td>
-                                </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="text-center py-3">Nenhuma transação encontrada para o período selecionado.</td>
+                                    </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
-                    
+
                     <!-- Paginação -->
                     <div class="d-flex justify-content-center mt-4">
-                        {{ $statements->links() }}
+                        {{ $statements->appends(request()->query())->links() }}
                     </div>
                 </div>
             </div>
