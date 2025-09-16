@@ -79,4 +79,5 @@ class Transfer extends Model
     {
         return $this->status === 'failed';
     }
+    
 }

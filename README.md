@@ -1,61 +1,451 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Lexxen Banking
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistema completo de gestão financeira para usuários PF e PJ.
 
-## About Laravel
+![Lexxen Banking Logo](docs/logo.png)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Índice
+1. [Sobre o Projeto](#sobre-o-projeto)
+2. [Requisitos do Sistema](#requisitos-do-sistema)
+3. [Instalação com Docker](#instalação-com-docker)
+4. [Configuração Inicial](#configuração-inicial)
+5. [Estrutura do Projeto](#estrutura-do-projeto)
+6. [Funcionalidades](#funcionalidades)
+7. [Guia de Testes](#guia-de-testes)
+8. [Manutenção e Comandos Úteis](#manutenção-e-comandos-úteis)
+9. [Resolução de Problemas](#resolução-de-problemas)
+10. [Licença](#licença)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Sobre o Projeto
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Lexxen Banking é uma plataforma completa de gestão financeira desenvolvida em Laravel que permite usuários físicos e jurídicos gerenciarem suas contas, carteiras e realizarem transferências de forma segura e eficiente.
 
-## Learning Laravel
+### Tecnologias Utilizadas
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- **Back-end**: Laravel 10.x, PHP 8.1+
+- **Front-end**: Bootstrap 5.x, Alpine.js
+- **Banco de Dados**: PostgreSQL 15
+- **Infraestrutura**: Docker, Redis
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## Requisitos do Sistema
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Para executar o projeto, você precisará:
 
-## Laravel Sponsors
+- Git
+- Docker 20.10+
+- Docker Compose 2.0+
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
 
-### Premium Partners
+## Instalação com Docker
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### 1. Clone o repositório
 
-## Contributing
+```bash
+git clone https://github.com/xlcn2/lexxen-banking.git
+cd banking
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### 2. Configuração dos contêineres Docker
 
-## Code of Conduct
+O projeto utiliza os seguintes contêineres:
+- **app**: Aplicação Laravel (PHP-FPM)
+- **db**: PostgreSQL 15
+- **nginx**: Servidor web (Alpine)
+- **redis**: Cache e filas (Alpine)
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+O arquivo `docker-compose.yml` está configurado da seguinte forma:
 
-## Security Vulnerabilities
+```yaml
+version: '3'
+services:
+  app:
+    build:
+      args:
+        user: lexxen
+        uid: 1000
+      context: ./
+      dockerfile: Dockerfile
+    image: lexxen-banking
+    container_name: lexxen-app
+    restart: unless-stopped
+    working_dir: /var/www/
+    volumes:
+      - ./:/var/www
+    networks:
+      - lexxen-network
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+  db:
+    image: postgres:15
+    container_name: lexxen-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - lexxen-data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    networks:
+      - lexxen-network
 
-## License
+  nginx:
+    image: nginx:alpine
+    container_name: lexxen-nginx
+    restart: unless-stopped
+    ports:
+      - 8000:80
+    volumes:
+      - ./:/var/www
+      - ./docker-compose/nginx:/etc/nginx/conf.d/
+    networks:
+      - lexxen-network
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+  redis:
+    image: redis:alpine
+    container_name: lexxen-redis
+    restart: unless-stopped
+    ports:
+      - 6379:6379
+    networks:
+      - lexxen-network
+
+networks:
+  lexxen-network:
+    driver: bridge
+
+volumes:
+  lexxen-data:
+    driver: local
+```
+
+### 3. Variáveis de ambiente
+
+Crie o arquivo de ambiente copiando o exemplo:
+
+```bash
+cp .env.example .env
+```
+
+Edite o arquivo `.env` para configurar as variáveis de ambiente, especialmente as relacionadas ao Docker:
+
+```bash
+
+# Ajuste as seguintes variáveis
+APP_NAME="Lexxen Banking"
+APP_URL=http://localhost:8000
+
+DB_CONNECTION=pgsql
+DB_HOST=db
+DB_PORT=5432
+DB_DATABASE=lexxen_banking
+DB_USERNAME=lexxen
+DB_PASSWORD=secret
+
+REDIS_HOST=redis
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+```
+
+### 4. Iniciar os contêineres Docker
+
+```bash
+# Construa as imagens (apenas na primeira vez ou quando houver alterações no Dockerfile)
+docker-compose build
+
+# Inicie os contêineres em modo detached (background)
+docker-compose up -d
+```
+
+Verifique se todos os contêineres estão rodando:
+
+```bash
+docker-compose ps
+```
+
+A saída deve mostrar que todos os serviços estão no estado "Up".
+
+### 5. Instalação das dependências
+
+```bash
+# Instalar dependências do Composer
+docker-compose exec app composer install
+
+# Instalar dependências do Node.js e compilar assets
+docker-compose exec app npm install
+docker-compose exec app npm run build
+```
+
+### 6. Configuração da aplicação Laravel
+
+```bash
+# Gerar chave da aplicação
+docker-compose exec app php artisan key:generate
+
+# Configurar permissões dos diretórios
+docker-compose exec app chmod -R 775 storage bootstrap/cache
+docker-compose exec app chown -R lexxen:lexxen storage bootstrap/cache
+```
+
+### 7. Configuração do banco de dados
+
+```bash
+# Executar migrações para criar as tabelas
+docker-compose exec app php artisan migrate
+
+# Executar seeders para popular o banco de dados com dados iniciais
+docker-compose exec app php artisan db:seed
+```
+
+Para executar apenas um seeder específico:
+
+```bash
+docker-compose exec app php artisan db:seed --class=UserSeeder
+```
+
+Para resetar o banco de dados e executar todas as migrações e seeders novamente:
+
+```bash
+docker-compose exec app php artisan migrate:fresh --seed
+```
+
+## Configuração Inicial
+
+### Acessando a aplicação
+
+Após a instalação, você pode acessar:
+
+- **Aplicação**: http://localhost:8000
+
+### Usuários e contas pré-configuradas
+
+Após executar os seeders, os seguintes usuários estarão disponíveis:
+
+| Tipo | Email | Senha | Status | Detalhes |
+|------|-------|-------|--------|----------|
+| PF | lucianopeas@gamil.com | senha123 | Aprovado | Possui 1 conta ativa com 2 carteiras |
+
+0
+
+## Estrutura do Projeto
+
+```
+lexxen-banking/
+├── app/                    # Lógica principal da aplicação
+│   ├── Http/               # Controllers e Middlewares
+│   ├── Models/             # Modelos do banco de dados
+│   ├── Observers/          # Observers para eventos de modelos
+│   └── Providers/          # Service Providers
+├── bootstrap/              # Arquivos de inicialização
+├── config/                 # Configurações da aplicação
+├── database/               # Migrações e Seeders
+│   ├── migrations/         # Migrações do banco de dados
+│   └── seeders/            # Classes de seeders
+├── docker-compose/         # Arquivos de configuração Docker
+│   └── nginx/              # Configuração do Nginx
+├── public/                 # Arquivos públicos
+├── resources/              # Views, assets e traduções
+│   ├── js/                 # Arquivos JavaScript
+│   ├── css/                # Arquivos CSS
+│   └── views/              # Templates Blade
+├── routes/                 # Definições de rotas
+├── storage/                # Arquivos de armazenamento e logs
+├── tests/                  # Testes automatizados
+├── docker-compose.yml      # Configuração do Docker Compose
+├── Dockerfile              # Instruções para construir a imagem Docker
+└── .env.example            # Exemplo de variáveis de ambiente
+```
+
+## Funcionalidades
+
+### 1. Usuários
+
+- Cadastro e autenticação de pessoas físicas e jurídicas
+- Perfis de usuário com informações detalhadas
+- Sistema de aprovação para novos usuários
+- Status de usuário (pendente, aprovado, bloqueado)
+
+### 2. Contas
+
+- Criação de contas bancárias com número único
+- Status de conta (ativa/bloqueada)
+- Saldo total calculado a partir das carteiras
+- Somente usuários aprovados podem criar contas
+
+### 3. Carteiras
+
+- Múltiplas carteiras por conta
+- Tipos de carteira (principal/secundária)
+- Ativação/desativação de carteiras
+- Transferência de fundos entre carteiras
+
+### 4. Transferências
+
+- Transferências entre carteiras do mesmo usuário
+- Transferências entre usuários diferentes
+- Histórico detalhado de transações
+- Validações de segurança (saldo suficiente, status ativo)
+
+### 5. Extratos
+
+- Visualização detalhada de todas as transações
+- Filtragem por período e carteira
+- Registro automático após cada transferência
+- Detalhes de saldo após cada operação
+
+
+## Manutenção e Comandos Úteis
+
+### Comandos Docker
+
+```bash
+# Ver status dos contêineres
+docker-compose ps
+
+# Ver logs dos contêineres
+docker-compose logs
+
+# Ver logs de um contêiner específico
+docker-compose logs app
+
+# Reiniciar todos os contêineres
+docker-compose restart
+
+# Reiniciar um contêiner específico
+docker-compose restart app
+
+# Parar todos os contêineres
+docker-compose stop
+
+# Parar e remover contêineres (mantém volumes)
+docker-compose down
+
+# Parar e remover contêineres e volumes (reset completo)
+docker-compose down -v
+```
+
+### Comandos Laravel úteis
+
+```bash
+# Limpar caches
+docker-compose exec app php artisan cache:clear
+docker-compose exec app php artisan config:clear
+docker-compose exec app php artisan view:clear
+docker-compose exec app php artisan route:clear
+
+# Executar migrações
+docker-compose exec app php artisan migrate
+
+# Reverter última migração
+docker-compose exec app php artisan migrate:rollback
+
+# Executar seeders
+docker-compose exec app php artisan db:seed
+
+# Abrir Tinker (REPL)
+docker-compose exec app php artisan tinker
+
+# Criar um novo controller
+docker-compose exec app php artisan make:controller NomeController
+
+# Criar um novo modelo com migração
+docker-compose exec app php artisan make:model Nome -m
+```
+
+### Atualizando o projeto
+
+```bash
+# Atualizar código do repositório
+git pull
+
+# Atualizar dependências
+docker-compose exec app composer update
+docker-compose exec app npm update
+
+# Reconstruir assets
+docker-compose exec app npm run build
+
+# Executar novas migrações
+docker-compose exec app php artisan migrate
+```
+
+## Resolução de Problemas
+
+### Problema: Contêineres não iniciam
+
+**Verificação**: Execute `docker-compose ps` para ver o status.
+
+**Solução**:
+1. Verifique se as portas não estão em uso:
+```bash
+sudo lsof -i :8000
+sudo lsof -i :5432
+sudo lsof -i :6379
+```
+
+2. Verifique os logs:
+```bash
+docker-compose logs
+```
+
+3. Reinicie os serviços:
+```bash
+docker-compose down
+docker-compose up -d
+```
+
+### Problema: Erro "Class Gate not found"
+
+**Solução**: Verifique se o import correto está sendo usado em todos os controllers:
+
+```php
+// Correto:
+use Illuminate\Support\Facades\Gate;
+
+// Incorreto:
+use App\Providers\Gate;
+```
+
+### Problema: Erros de permissão no storage
+
+**Solução**:
+```bash
+docker-compose exec app chmod -R 775 storage bootstrap/cache
+docker-compose exec app chown -R lexxen:lexxen storage bootstrap/cache
+```
+
+### Problema: Setas de paginação com tamanho incorreto
+
+**Solução**: Verifique se o AppServiceProvider está configurado para usar Bootstrap:
+
+```php
+// Em app/Providers/AppServiceProvider.php
+use Illuminate\Pagination\Paginator;
+
+public function boot()
+{
+    Paginator::useBootstrap();
+}
+```
+
+### Problema: Banco de dados corrompido
+
+**Solução**: Reinicialize o banco de dados:
+```bash
+docker-compose exec app php artisan migrate:fresh --seed
+```
+
+### Problema: Composer com erro de memória
+
+**Solução**: Aumente o limite de memória do PHP:
+```bash
+docker-compose exec app php -d memory_limit=-1 /usr/local/bin/composer install
+```
+
+## Licença
+
+Este projeto está licenciado sob a [Licença MIT](LICENSE).
+
+---
+
+Desenvolvido por Luciano Filho | Última atualização: 2025-09-16

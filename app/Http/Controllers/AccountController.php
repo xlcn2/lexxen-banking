@@ -19,11 +19,14 @@ class AccountController extends Controller
             ->with('wallets')  // Eager loading para evitar N+1
             ->get()
             ->map(function($account) {
+                // Calcular o saldo total da conta somando os saldos das carteiras
+                $totalBalance = $account->wallets->sum('balance');
+                
                 return [
                     'id' => $account->id,
                     'number' => $account->number,
                     'status' => $account->status,
-                    'total_balance' => $account->total_balance,
+                    'total_balance' => (float) $totalBalance,
                 ];
             });
         
@@ -35,6 +38,12 @@ class AccountController extends Controller
      */
     public function create()
     {
+        // Verificar se o usuário está aprovado
+        if (Auth::user()->status !== 'approved') {
+            return redirect()->route('accounts.index')
+                ->with('error', 'Apenas usuários aprovados podem criar contas.');
+        }
+        
         return view('accounts.create');
     }
 
@@ -43,10 +52,6 @@ class AccountController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            // Validações necessárias
-        ]);
-
         // Verificar se o usuário está aprovado
         if (Auth::user()->status !== 'approved') {
             return redirect()->route('accounts.index')
@@ -80,14 +85,39 @@ class AccountController extends Controller
     public function show(Account $account)
     {
         // Verificar se a conta pertence ao usuário autenticado
-        $this->authorize('view', $account);
+        if ($account->accountable_id !== Auth::id() || $account->accountable_type !== get_class(Auth::user())) {
+            abort(403, 'Você não tem permissão para visualizar esta conta.');
+        }
 
         // Eager loading para evitar N+1 queries
         $account->load(['wallets' => function($query) {
             $query->withCount('statements');
         }]);
+        
+        // Calcular o saldo total da conta
+        $account->total_balance = $account->wallets->sum('balance');
 
         return view('accounts.show', compact('account'));
+    }
+
+    /**
+     * Update the status of the account.
+     */
+    public function updateStatus(Request $request, Account $account)
+    {
+        // Verificar se a conta pertence ao usuário autenticado
+        if ($account->accountable_id !== Auth::id() || $account->accountable_type !== get_class(Auth::user())) {
+            abort(403, 'Você não tem permissão para atualizar esta conta.');
+        }
+
+        $validated = $request->validate([
+            'status' => 'required|in:active,blocked',
+        ]);
+
+        $account->update(['status' => $validated['status']]);
+
+        return redirect()->route('accounts.show', $account)
+            ->with('success', 'Status da conta atualizado com sucesso!');
     }
 
     /**

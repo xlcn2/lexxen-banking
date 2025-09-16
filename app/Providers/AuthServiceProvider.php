@@ -2,27 +2,27 @@
 
 namespace App\Providers;
 
-use App\Models\Wallet;
-use Illuminate\Pagination\Paginator;
-use Illuminate\Support\ServiceProvider;
+use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
+use App\Models\Wallet;
 
-class AppServiceProvider extends ServiceProvider
+class AuthServiceProvider extends ServiceProvider
 {
     /**
-     * Register any application services.
+     * The model to policy mappings for the application.
+     *
+     * @var array<class-string, class-string>
      */
-    public function register(): void
-    {
-        //
-    }
+    protected $policies = [
+        Statement::class => StatementPolicy::class,
+    ];
 
     /**
-     * Bootstrap any application services.
+     * Register any authentication / authorization services.
      */
     public function boot(): void
     {
-           // Registrar Gates
+        // Registrar Gates
         Gate::define('update-wallet', function ($user, Wallet $wallet) {
             // Obter as contas do usuário
             $userAccountIds = $user->accounts->pluck('id')->toArray();
@@ -30,7 +30,7 @@ class AppServiceProvider extends ServiceProvider
             // Verificar se a carteira pertence a uma das contas do usuário
             return in_array($wallet->account_id, $userAccountIds);
         });
-
-        Paginator::useBootstrap();
+        
+        // Outros Gates...
     }
 }

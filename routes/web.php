@@ -15,9 +15,8 @@ use App\Http\Controllers\Auth\LoginController;
 | Web Routes
 |--------------------------------------------------------------------------
 */
-
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('login');
 });
 
 // Autenticação
@@ -35,23 +34,25 @@ Route::post('/register/corporate', [RegisterController::class, 'registerCorporat
 Route::middleware(['auth'])->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    
+
     // Contas
     Route::resource('accounts', AccountController::class);
-    Route::patch('/accounts/{account}/status', [AccountController::class, 'updateStatus'])->name('accounts.update-status');
-    
+    Route::patch('/accounts/{account}/status', [AccountController::class, 'updateStatus'])->name('accounts.updateStatus');
+
     // Carteiras
-    Route::resource('wallets', WalletController::class);
-    Route::patch('/wallets/{wallet}/status', [WalletController::class, 'updateStatus'])->name('wallets.update-status');
-    Route::get('/accounts/{account}/wallets/create', [WalletController::class, 'createForAccount'])->name('accounts.wallets.create');
-    
+    Route::get('/wallets', [WalletController::class, 'index'])->name('wallets.index');
+    Route::get('/wallets/create', [WalletController::class, 'create'])->name('wallets.create');
+    Route::post('/wallets', [WalletController::class, 'store'])->name('wallets.store');
+    Route::post('/wallets/{wallet}/deactivate-with-transfer', [WalletController::class, 'deactivateWithTransfer'])
+        ->name('wallets.deactivateWithTransfer');
+    Route::patch('/wallets/{wallet}/status', [WalletController::class, 'updateStatus'])->name('wallets.updateStatus');
     // Transferências
     Route::resource('transfers', TransferController::class)->only(['index', 'create', 'store', 'show']);
-    
+
     // Extratos
     Route::get('/statements', [StatementController::class, 'index'])->name('statements.index');
     Route::resource('statements', StatementController::class)->only(['index', 'show']);
-    
+
     // Perfil
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

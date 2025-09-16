@@ -79,4 +79,6 @@ class Wallet extends Model
     {
         return $this->type === 'default';
     }
+
+    
 }

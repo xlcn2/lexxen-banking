@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str; 
 use App\DTOs\Transfer\TransferDTO;
 use App\Services\TransferService;
 use App\Http\Resources\Transfer\TransferResource;
 use App\Models\Wallet;
 use App\Models\Transfer;
+use App\Jobs\ProcessTransfer;
 
 class TransferController extends Controller
 {
@@ -92,25 +94,68 @@ class TransferController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'source_wallet_id' => 'required|exists:wallets,id',
-            'destination_wallet_id' => 'required|exists:wallets,id|different:source_wallet_id',
-            'amount' => 'required|numeric|min:0.01',
-        ]);
-        
+     // Validar request
+     $validated = $request->validate([
+        'source_wallet_id' => 'required|exists:wallets,id',
+        'destination_wallet_id' => 'required|exists:wallets,id',
+        'amount' => 'required|numeric|min:0.01',
+        'idempotency_key' => 'sometimes|string'
+    ]);
+
+    // Buscar carteira de origem com relacionamento de conta
+    $sourceWallet = Wallet::with('account')->findOrFail($validated['source_wallet_id']);
+    
+    // Verificar se a conta está bloqueada
+    if ($sourceWallet->account->status === 'blocked') {
+        return redirect()->route('transfers.index')
+            ->with('error', 'A conta de origem está bloqueada. Não é possível realizar transferências.');
+    }
+    
+    // Verificar se a carteira está ativa
+    if ($sourceWallet->status !== 'active') {
+        return redirect()->route('transfers.index')
+            ->with('error', 'A carteira de origem não está ativa');
+    }
+
+    // Verificar carteira de destino
+    $destinationWallet = Wallet::with('account')->findOrFail($validated['destination_wallet_id']);
+    
+    // Verificar se a carteira de destino está ativa
+    if ($destinationWallet->status !== 'active') {
+        return redirect()->route('transfers.index')
+            ->with('error', 'A carteira de destino não está ativa');
+    }
+
+    // Verificar saldo
+    if ($sourceWallet->balance < $validated['amount']) {
+        return redirect()->route('transfers.index')
+            ->with('error', 'Saldo insuficiente para realizar a transferência');
+    }
+
+    
+        // Gerar chave de idempotência se não fornecida
+        if (!isset($validated['idempotency_key'])) {
+            $validated['idempotency_key'] = Str::uuid()->toString();
+        }
+    
+        // Formatar valor para exibição
+        $formattedAmount = number_format($validated['amount'], 2, ',', '.');
+    
+        // Obter informações das carteiras para mensagem mais detalhada
+        $sourceWalletName = $sourceWallet->name;
+        $destinationWalletName = $destinationWallet->name;
+    
         try {
-            $dto = new TransferDTO(
-                source_wallet_id: $request->source_wallet_id,
-                destination_wallet_id: $request->destination_wallet_id,
-                amount: (float)$request->amount,
-            );
+            // Disparar job para processamento assíncrono
+            ProcessTransfer::dispatch($validated);
             
-            $transfer = $this->transferService->transfer($dto);
-            
+            // Redirecionar com mensagem de sucesso
             return redirect()->route('transfers.index')
-                ->with('success', 'Transferência iniciada com sucesso! Ela será processada em breve.');
+                ->with('success', "Transferência de R$ {$formattedAmount} enviada para processamento da carteira {$sourceWalletName} para {$destinationWalletName}. Aguarde a confirmação.");
         } catch (\Exception $e) {
-            return back()->with('error', $e->getMessage())->withInput();
+            // Em caso de erro, redirecionar com mensagem de erro
+            return redirect()->route('transfers.index')
+                ->with('error', 'Erro ao processar transferência: ' . $e->getMessage());
         }
     }
 

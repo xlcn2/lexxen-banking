@@ -4,24 +4,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Account extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'number',
         'status',
     ];
 
     /**
-     * Get the owning accountable model (individual or corporate user).
+     * Get the accountable model (user or company).
      */
     public function accountable()
     {
@@ -29,7 +23,7 @@ class Account extends Model
     }
 
     /**
-     * Get the wallets for this account.
+     * Get the wallets associated with the account.
      */
     public function wallets()
     {
@@ -37,26 +31,18 @@ class Account extends Model
     }
 
     /**
-     * Get the total balance of all wallets in this account.
+     * Check if the account is active.
      */
-    public function getTotalBalanceAttribute()
-    {
-        return $this->wallets()->sum('balance');
-    }
-
-    /**
-     * Check if account is active
-     */
-    public function isActive(): bool
+    public function isActive()
     {
         return $this->status === 'active';
     }
 
     /**
-     * Get the default wallet for this account.
+     * Get the total balance of the account.
      */
-    public function defaultWallet()
+    public function getTotalBalanceAttribute()
     {
-        return $this->wallets()->where('type', 'default')->first();
+        return $this->wallets->sum('balance');
     }
 }

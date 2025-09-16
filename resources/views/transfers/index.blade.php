@@ -3,6 +3,7 @@
 @section('title', 'Minhas Transferências')
 
 @section('content')
+<!-- Resto do conteúdo da página -->
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-md-12">
@@ -13,11 +14,7 @@
                 </div>
 
                 <div class="card-body">
-                    @if(session('success'))
-                        <div class="alert alert-success">
-                            {{ session('success') }}
-                        </div>
-                    @endif
+                  
 
                     <div class="table-responsive">
                         <table class="table table-striped">
