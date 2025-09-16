@@ -22,7 +22,7 @@ Lexxen Banking é uma plataforma completa de gestão financeira desenvolvida em 
 
 ### Tecnologias Utilizadas
 
-- **Back-end**: Laravel 10.x, PHP 8.1+
+- **Back-end**: Laravel 12.x, PHP 8.3+
 - **Front-end**: Bootstrap 5.x, Alpine.js
 - **Banco de Dados**: PostgreSQL 15
 - **Infraestrutura**: Docker, Redis
