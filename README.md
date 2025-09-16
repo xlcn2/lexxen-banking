@@ -140,7 +140,7 @@ DB_HOST=db
 DB_PORT=5432
 DB_DATABASE=lexxen_banking
 DB_USERNAME=lexxen
-DB_PASSWORD=secret
+DB_PASSWORD=password
 
 REDIS_HOST=redis
 REDIS_PASSWORD=null
