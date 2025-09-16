@@ -42,7 +42,7 @@ Para executar o projeto, você precisará:
 
 ```bash
 git clone https://github.com/xlcn2/lexxen-banking.git
-cd banking
+cd lexxen-banking
 ```
 
 ### 2. Configuração dos contêineres Docker
