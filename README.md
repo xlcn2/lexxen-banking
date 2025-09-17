@@ -223,7 +223,7 @@ Após executar os seeders, os seguintes usuários estarão disponíveis:
 
 | Tipo | Email | Senha | Status | Detalhes |
 |------|-------|-------|--------|----------|
-| PF | lucianopeas@gamil.com | senha123 | Aprovado | Possui 1 conta ativa com 2 carteiras |
+| PF | lucianopeas@gmail.com | senha123 | Aprovado | Possui 1 conta ativa com 2 carteiras |
 
 0
 
